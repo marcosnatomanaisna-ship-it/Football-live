@@ -1,11 +1,10 @@
 {
   "name": "MEDBI Football Live",
   "short_name": "MEDBI Football",
-  "description": "Futebol mundial, jogos e transmissões oficiais.",
-  "lang": "pt",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#090d14",
   "theme_color": "#090d14",
+  "description": "Futebol ao vivo, jogos e canais oficiais.",
   "icons": [{"src":"assets/icons/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
 }

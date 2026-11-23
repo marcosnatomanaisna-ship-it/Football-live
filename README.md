@@ -1,29 +1,25 @@
 # MEDBI Football Live
 
-Primeira versão da interface do aplicativo, em HTML, CSS e JavaScript puro.
+Aplicação web/PWA em HTML, CSS e JavaScript puro.
+
+## Estrutura
+- `index.html`
+- `css/style.css`
+- `js/app.js`
+- `js/api.js`
+- `js/data.js`
+- `js/storage.js`
+- `manifest.json`
+- `assets/icons/icon.svg`
 
 ## Como testar
-1. Descarrega e extrai o ZIP.
-2. Abre `index.html` num navegador moderno.
-3. Para publicar, envia o conteúdo da pasta para um repositório GitHub e ativa GitHub Pages.
+Abra `index.html` num servidor local ou publique os ficheiros num alojamento HTTPS. Alguns navegadores bloqueiam módulos JavaScript quando o HTML é aberto diretamente como `file://`.
 
-## O que já funciona
-- Interface escura responsiva.
-- Menu lateral e navegação inferior.
-- Páginas Início, Ao vivo, Jogos, Competições, Canais oficiais, Favoritos e Sobre.
-- Pesquisa local por equipa e competição.
-- Filtros por estado.
-- Favoritos guardados no dispositivo.
+## Dados de jogos
+A aplicação tenta consultar o scoreboard público da ESPN para algumas competições internacionais. É um endpoint público não comercial e sem garantia de disponibilidade; não é uma API oficial garantida para terceiros. A cobertura não inclui todas as ligas, nomeadamente o campeonato da Guiné-Bissau.
 
-## Importante
-Os jogos atuais no ficheiro `js/data.js` são dados demonstrativos. Não são resultados reais. A aplicação ainda não possui uma fonte de dados ligada nem transmissões integradas.
+## Transmissões
+A aplicação não inclui listas IPTV não autorizadas. `officialStreams` começa vazio. Só devem ser adicionadas transmissões cuja autorização e compatibilidade de incorporação estejam confirmadas para a partida em causa.
 
-O módulo `js/api.js` contém um adaptador inicial para API-Football. Uma chave de API privada não deve ser colocada num site público. Para produção, será necessário um backend/proxy para proteger a chave e verificar os limites e condições do plano utilizado.
-
-As páginas de canais são ligações para plataformas oficiais. A disponibilidade de transmissões depende dos direitos e da região. Não inserir streams não autorizados.
-
-## Próximas etapas
-1. Ligar uma API de resultados e calendário.
-2. Criar backend seguro para chaves de API, se necessário.
-3. Integrar apenas fontes de transmissão oficiais/autorizadas.
-4. Testar instalação e conversão para APK.
+## Segurança
+Não guardar chaves privadas no JavaScript público, no GitHub ou no APK.
