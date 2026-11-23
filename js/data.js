@@ -1,19 +1,19 @@
 
 /*
- MEDBI Football Live
- Fontes de transmissões gratuitas e oficiais.
- Não são jogos fictícios nem transmissões garantidas.
+ MEDBI FOOTBALL LIVE
+ Fontes oficiais de futebol.
+ Apenas links legítimos.
 */
 
 export const demoMatches = [];
 
 export const competitions = [
   ["Campeonato Nacional", "Guiné-Bissau"],
+  ["Campeonato Nacional Feminino", "Guiné-Bissau"],
   ["Taça Nacional", "Guiné-Bissau"],
   ["CAF Champions League", "África"],
   ["CAF Confederation Cup", "África"],
   ["FIFA World Cup", "Internacional"],
-  ["FIFA Women's World Cup", "Internacional"],
   ["UEFA Champions League", "Europa"],
   ["Premier League", "Inglaterra"],
   ["La Liga", "Espanha"],
@@ -25,22 +25,25 @@ export const competitions = [
 export const officialChannels = [
   {
     id: "fifa-plus",
-    name: "FIFA+",
-    description: "Transmissões e conteúdos oficiais da FIFA.",
-    url: "https://www.plus.fifa.com/",
+    name: "FIFA+ na DAZN",
+    description:
+      "Plataforma oficial da FIFA com transmissões gratuitas de competições selecionadas. A disponibilidade depende do país e do jogo.",
+    url: "https://www.dazn.com/fifaplus",
     type: "platform"
   },
   {
     id: "caf-tv",
     name: "CAF TV",
-    description: "Transmissões e conteúdos oficiais da Confederação Africana de Futebol.",
+    description:
+      "Canal oficial da Confederação Africana de Futebol no YouTube. Transmite determinados jogos e eventos.",
     url: "https://www.youtube.com/@CAF_TV",
     type: "youtube"
   },
   {
     id: "uefa-tv",
     name: "UEFA.tv",
-    description: "Conteúdos oficiais da UEFA.",
+    description:
+      "Plataforma oficial da UEFA com vídeos, jogos selecionados e conteúdos de futebol.",
     url: "https://www.uefa.tv/",
     type: "platform"
   }
