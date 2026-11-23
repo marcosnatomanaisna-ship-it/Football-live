@@ -1,90 +1,194 @@
+
 <!DOCTYPE html>
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090d14">
-  <meta name="description" content="MEDBI Football Live — futebol mundial, jogos, resultados e transmissões oficiais.">
+  <meta name="description" content="MEDBI Football Live — assiste ao futebol através de transmissões oficiais.">
   <title>MEDBI Football Live</title>
+
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <button class="icon-btn" id="menuButton" aria-label="Abrir menu" aria-expanded="false">
-        <span class="hamburger"></span>
-      </button>
-      <a class="brand" href="#inicio" aria-label="MEDBI Football Live - início">
-        <span class="brand-mark">M</span>
-        <span><strong>MEDBI</strong><small>FOOTBALL LIVE</small></span>
-      </a>
-      <button class="icon-btn search-toggle" id="searchToggle" aria-label="Pesquisar">⌕</button>
-    </header>
 
-    <div class="search-panel" id="searchPanel" hidden>
-      <input id="searchInput" type="search" placeholder="Pesquisar equipa, jogo ou competição..." autocomplete="off">
-      <button class="text-btn" id="clearSearch">Limpar</button>
+<body>
+<div class="app-shell">
+
+  <!-- CABEÇALHO -->
+  <header class="topbar">
+    <button class="icon-btn" id="menuButton"
+      aria-label="Abrir menu" aria-expanded="false">
+      <span class="hamburger"></span>
+    </button>
+
+    <a class="brand" href="#inicio">
+      <span class="brand-mark">M</span>
+      <span>
+        <strong>MEDBI</strong>
+        <small>FOOTBALL LIVE</small>
+      </span>
+    </a>
+
+    <button class="icon-btn search-toggle" id="searchToggle"
+      aria-label="Pesquisar">⌕</button>
+  </header>
+
+  <!-- PESQUISA -->
+  <div class="search-panel" id="searchPanel" hidden>
+    <input id="searchInput" type="search"
+      placeholder="Pesquisar equipa, jogo ou competição..."
+      autocomplete="off">
+    <button class="text-btn" id="clearSearch">Limpar</button>
+  </div>
+
+  <!-- MENU LATERAL -->
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+    <div class="sidebar-head">
+      <span class="brand-mark">M</span>
+      <div>
+        <strong>MEDBI Football Live</strong>
+        <small>O mundo do futebol</small>
+      </div>
+      <button class="icon-btn close-menu" id="closeMenu"
+        aria-label="Fechar menu">×</button>
     </div>
 
-    <div class="scrim" id="scrim"></div>
-    <aside class="sidebar" id="sidebar" aria-label="Menu principal">
-      <div class="sidebar-head">
-        <span class="brand-mark">M</span>
-        <div><strong>MEDBI Football Live</strong><small>O mundo do futebol</small></div>
-        <button class="icon-btn close-menu" id="closeMenu" aria-label="Fechar menu">×</button>
-      </div>
-      <nav class="side-nav">
-        <button class="nav-link active" data-page="inicio"><span>⌂</span> Início</button>
-        <button class="nav-link" data-page="ao-vivo"><span class="live-dot"></span> Ao vivo</button>
-        <button class="nav-link" data-page="jogos"><span>▤</span> Jogos</button>
-        <button class="nav-link" data-page="competicoes"><span>♜</span> Competições</button>
-        <button class="nav-link" data-page="canais"><span>▣</span> Canais oficiais</button>
-        <button class="nav-link" data-page="favoritos"><span>♡</span> Favoritos</button>
-      </nav>
-      <div class="sidebar-bottom">
-        <div class="sidebar-note"><strong>MEDBI Football Live</strong><p>Acompanha o futebol mundial num só lugar.</p></div>
-        <button class="nav-link" data-page="sobre"><span>ⓘ</span> Sobre o aplicativo</button>
-      </div>
-    </aside>
+    <nav class="side-nav">
+      <button class="nav-link active" data-page="inicio">
+        <span>⌂</span> Início
+      </button>
 
-    <main id="mainContent">
-      <section class="hero">
-        <div class="hero-copy">
-          <span class="eyebrow"><i class="live-dot"></i> FUTEBOL SEM FRONTEIRAS</span>
-          <h1>O futebol do<br><em>mundo inteiro.</em></h1>
-          <p>Jogos, resultados e acesso a transmissões oficiais, tudo num só lugar.</p>
-          <button class="primary-btn" data-go="ao-vivo">Ver jogos ao vivo <span>→</span></button>
-        </div>
-        <div class="hero-ball" aria-hidden="true">⚽</div>
-        <div class="hero-glow"></div>
-      </section>
+      <button class="nav-link" data-page="ao-vivo">
+        <span class="live-dot"></span> Ao vivo
+      </button>
 
-      <section class="content-section" id="pageContent">
-        <div class="section-heading">
-          <div><span class="eyebrow">ACOMPANHA AGORA</span><h2>Em destaque</h2></div>
-          <button class="text-btn" data-go="jogos">Ver todos <span>→</span></button>
-        </div>
-        <div class="notice"><span>ⓘ</span><p>Os jogos apresentados nesta versão são exemplos demonstrativos. Liga uma fonte de dados para obter calendário e resultados reais.</p></div>
-        <div class="filter-row" id="quickFilters">
-          <button class="chip selected" data-filter="todos">Todos</button>
-          <button class="chip" data-filter="live">Ao vivo</button>
-          <button class="chip" data-filter="upcoming">Próximos</button>
-          <button class="chip" data-filter="finished">Terminados</button>
-        </div>
-        <div class="match-list" id="matchList" aria-live="polite"></div>
-      </section>
-    </main>
+      <button class="nav-link" data-page="jogos">
+        <span>▤</span> Jogos
+      </button>
 
-    <nav class="bottom-nav" aria-label="Navegação inferior">
-      <button class="bottom-link active" data-page="inicio"><span>⌂</span><small>Início</small></button>
-      <button class="bottom-link" data-page="ao-vivo"><span>◉</span><small>Ao vivo</small></button>
-      <button class="bottom-link" data-page="jogos"><span>▤</span><small>Jogos</small></button>
-      <button class="bottom-link" data-page="favoritos"><span>♡</span><small>Favoritos</small></button>
+      <button class="nav-link" data-page="competicoes">
+        <span>♜</span> Competições
+      </button>
+
+      <button class="nav-link" data-page="canais">
+        <span>▣</span> Canais oficiais
+      </button>
+
+      <button class="nav-link" data-page="favoritos">
+        <span>♡</span> Favoritos
+      </button>
     </nav>
-  </div>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="js/app.js"></script>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-note">
+        <strong>MEDBI Football Live</strong>
+        <p>O futebol mundial num só lugar.</p>
+      </div>
+
+      <button class="nav-link" data-page="sobre">
+        <span>ⓘ</span> Sobre o aplicativo
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main id="mainContent">
+
+    <!-- DESTAQUE -->
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">
+          <i class="live-dot"></i> FUTEBOL SEM FRONTEIRAS
+        </span>
+
+        <h1>
+          O futebol do<br>
+          <em>mundo inteiro.</em>
+        </h1>
+
+        <p>
+          Assiste aos jogos através de fontes oficiais
+          e acompanha o futebol mundial.
+        </p>
+
+        <button class="primary-btn" data-go="ao-vivo">
+          Assistir ao vivo <span>→</span>
+        </button>
+      </div>
+
+      <div class="hero-ball" aria-hidden="true">⚽</div>
+      <div class="hero-glow"></div>
+    </section>
+
+    <!-- PÁGINAS DINÂMICAS -->
+    <section class="content-section" id="pageContent">
+
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">MEDBI FOOTBALL LIVE</span>
+          <h2>Transmissões</h2>
+        </div>
+        <button class="text-btn" data-go="ao-vivo">
+          Ver todas →
+        </button>
+      </div>
+
+      <div class="notice">
+        <span>ⓘ</span>
+        <p>
+          As transmissões dependem da disponibilidade e dos
+          direitos de cada emissora. Serão apresentadas apenas
+          fontes oficiais.
+        </p>
+      </div>
+
+      <div class="filter-row" id="quickFilters">
+        <button class="chip selected" data-filter="todos">Todos</button>
+        <button class="chip" data-filter="live">Ao vivo</button>
+        <button class="chip" data-filter="upcoming">Próximos</button>
+        <button class="chip" data-filter="finished">Terminados</button>
+      </div>
+
+      <div class="match-list" id="matchList"></div>
+
+    </section>
+  </main>
+
+  <!-- NAVEGAÇÃO INFERIOR -->
+  <nav class="bottom-nav" aria-label="Navegação inferior">
+
+    <button class="bottom-link active" data-page="inicio">
+      <span>⌂</span>
+      <small>Início</small>
+    </button>
+
+    <button class="bottom-link" data-page="ao-vivo">
+      <span>◉</span>
+      <small>Ao vivo</small>
+    </button>
+
+    <button class="bottom-link" data-page="jogos">
+      <span>▤</span>
+      <small>Jogos</small>
+    </button>
+
+    <button class="bottom-link" data-page="favoritos">
+      <span>♡</span>
+      <small>Favoritos</small>
+    </button>
+
+  </nav>
+</div>
+
+<!-- MENSAGENS -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- JAVASCRIPT -->
+<script type="module" src="js/app.js"></script>
+
 </body>
 </html>
