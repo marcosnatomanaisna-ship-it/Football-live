@@ -1,84 +1,442 @@
-import {demoMatches, competitions} from "./data.js";
-import {getFavorites, toggleFavorite} from "./storage.js";
 
-const $ = (s,root=document)=>root.querySelector(s);
-const $$ = (s,root=document)=>[...root.querySelectorAll(s)];
-const matchList=$("#matchList"), sidebar=$("#sidebar"), scrim=$("#scrim");
-let currentPage="inicio", currentFilter="todos", searchTerm="";
+import { demoMatches, competitions, officialChannels } from "./data.js";
+import { getFavorites, toggleFavorite } from "./storage.js";
 
-function toast(message){const el=$("#toast");el.textContent=message;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2400)}
-function openMenu(){sidebar.classList.add("open");scrim.classList.add("show");$("#menuButton").setAttribute("aria-expanded","true")}
-function closeMenu(){sidebar.classList.remove("open");scrim.classList.remove("show");$("#menuButton").setAttribute("aria-expanded","false")}
-function setPage(page){
- currentPage=page;closeMenu();
- $$(".nav-link[data-page],.bottom-link[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
- renderPage();
- window.scrollTo({top:0,behavior:"smooth"});
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+const sidebar = $("#sidebar");
+const scrim = $("#scrim");
+
+let currentPage = "inicio";
+let currentFilter = "todos";
+let searchTerm = "";
+
+function toast(message) {
+  const el = $("#toast");
+  el.textContent = message;
+  el.classList.add("show");
+
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => {
+    el.classList.remove("show");
+  }, 2500);
 }
-function matchCard(m){
- const fav=getFavorites().includes(m.id);
- const state=m.status==="live"?"live":m.status==="finished"?"finished":"upcoming";
- const label=state==="live"?"AO VIVO":state==="finished"?"TERMINADO":"PRÓXIMO";
- const score=state==="upcoming"?m.kickoff:`${m.homeScore ?? 0} : ${m.awayScore ?? 0}`;
- return `<article class="match-card">
-  <div class="match-meta"><span>${escapeHtml(m.competition)}</span><span class="status ${state}">${state==="live"?'<i class="live-dot"></i>':""}${label}</span></div>
-  <div class="teams">
-   <div class="team"><div class="team-crest">${m.homeIcon||"⚽"}</div><div class="team-name">${escapeHtml(m.home)}</div></div>
-   <div class="score">${score}</div>
-   <div class="team"><div class="team-crest">${m.awayIcon||"⚽"}</div><div class="team-name">${escapeHtml(m.away)}</div></div>
-  </div>
-  <div class="match-foot"><span>${escapeHtml(m.minute||m.kickoff||"")}</span><button class="favorite-btn ${fav?"saved":""}" data-favorite="${escapeHtml(m.id)}" aria-label="Adicionar aos favoritos">${fav?"♥":"♡"}</button></div>
- </article>`;
+
+function openMenu() {
+  sidebar.classList.add("open");
+  scrim.classList.add("show");
+  $("#menuButton").setAttribute("aria-expanded", "true");
 }
-function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function renderMatches(list){
- const filtered=list.filter(m=>{
-  const filterOk=currentFilter==="todos" || m.status===currentFilter;
-  const q=searchTerm.toLowerCase();
-  const searchOk=!q||[m.home,m.away,m.competition].some(v=>String(v).toLowerCase().includes(q));
-  return filterOk&&searchOk;
- });
- matchList.innerHTML=filtered.length?filtered.map(matchCard).join(""):`<div class="empty-state">Não foram encontrados jogos nesta secção.</div>`;
+
+function closeMenu() {
+  sidebar.classList.remove("open");
+  scrim.classList.remove("show");
+  $("#menuButton").setAttribute("aria-expanded", "false");
 }
-function heading(title,desc){return `<h1 class="page-title">${title}</h1><p class="page-description">${desc}</p>`}
-function renderPage(){
- const content=$("#pageContent");
- const hero=$(".hero");
- hero.hidden=currentPage!=="inicio";
- const introNotice=`<div class="notice"><span>ⓘ</span><p>Esta versão usa jogos demonstrativos. Os dados reais exigem ligação a uma API. As transmissões serão apresentadas apenas quando forem oficiais e autorizadas.</p></div>`;
- if(currentPage==="inicio"){
-  content.innerHTML=`<div class="section-heading"><div><span class="eyebrow">ACOMPANHA AGORA</span><h2>Em destaque</h2></div><button class="text-btn" data-go="jogos">Ver todos →</button></div>${introNotice}<div class="filter-row" id="quickFilters"><button class="chip selected" data-filter="todos">Todos</button><button class="chip" data-filter="live">Ao vivo</button><button class="chip" data-filter="upcoming">Próximos</button><button class="chip" data-filter="finished">Terminados</button></div><div class="match-list" id="matchList"></div>`;
- } else if(["ao-vivo","jogos","favoritos"].includes(currentPage)){
-  const titles={"ao-vivo":["Jogos ao vivo","Acompanha os encontros que estão a decorrer."],"jogos":["Todos os jogos","Consulta partidas, horários e resultados."],"favoritos":["Os teus favoritos","Jogos que guardaste para acompanhar."]};
-  const [t,d]=titles[currentPage];
-  content.innerHTML=`${heading(t,d)}${introNotice}<div class="match-list" id="matchList"></div>`;
- } else if(currentPage==="competicoes"){
-  content.innerHTML=`${heading("Competições","Explora campeonatos e torneios de diferentes países.")}${introNotice}<div class="competition-grid">${competitions.map(([n,c])=>`<div class="competition">🏆 ${escapeHtml(n)}<small>${escapeHtml(c)}</small></div>`).join("")}</div>`;
- } else if(currentPage==="canais"){
-  content.innerHTML=`${heading("Canais oficiais","Acede às páginas oficiais de emissoras e competições. A disponibilidade dos jogos depende do país e dos direitos de transmissão.")}<div class="channel-card"><h3>FIFA+</h3><p>Plataforma oficial da FIFA. A oferta de jogos e conteúdos varia por região.</p><a href="https://www.plus.fifa.com/" target="_blank" rel="noopener noreferrer">Visitar FIFA+ ↗</a></div><div class="channel-card"><h3>UEFA.tv</h3><p>Conteúdos oficiais da UEFA. Nem todos os jogos em direto estão disponíveis.</p><a href="https://www.uefa.tv/" target="_blank" rel="noopener noreferrer">Visitar UEFA.tv ↗</a></div><div class="channel-card"><h3>CAF TV</h3><p>Conteúdos e vídeos oficiais da Confederação Africana de Futebol.</p><a href="https://www.youtube.com/@CAF_TV" target="_blank" rel="noopener noreferrer">Visitar CAF TV ↗</a></div>`;
- } else {
-  content.innerHTML=`${heading("Sobre o MEDBI Football Live","Uma plataforma para acompanhar o futebol mundial.")}<div class="channel-card"><h3>O nosso compromisso</h3><p>O MEDBI Football Live organiza informação futebolística e encaminha os utilizadores para fontes oficiais de transmissão. Não aloja nem retransmite sinais televisivos sem autorização.</p><p>Versão inicial de desenvolvimento. Os resultados de demonstração não são dados reais.</p></div>`;
- }
- const list=$("#matchList");
- if(list){
-  let matches=demoMatches;
-  if(currentPage==="ao-vivo") matches=matches.filter(m=>m.status==="live");
-  if(currentPage==="favoritos") matches=matches.filter(m=>getFavorites().includes(m.id));
-  if(currentPage==="jogos") matches=demoMatches;
-  renderMatches(matches);
- }
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
 }
-document.addEventListener("click",e=>{
- const pageBtn=e.target.closest("[data-page]"); if(pageBtn){setPage(pageBtn.dataset.page);return}
- const go=e.target.closest("[data-go]");if(go){setPage(go.dataset.go);return}
- const filter=e.target.closest("[data-filter]");if(filter){currentFilter=filter.dataset.filter;$$(".chip").forEach(b=>b.classList.toggle("selected",b===filter));renderPage();return}
- const fav=e.target.closest("[data-favorite]");if(fav){toggleFavorite(fav.dataset.favorite);renderPage();toast("Lista de favoritos atualizada.");}
+
+function heading(title, description) {
+  return `
+    <h1 class="page-title">${escapeHtml(title)}</h1>
+    <p class="page-description">${escapeHtml(description)}</p>
+  `;
+}
+
+function getChannels() {
+  return Array.isArray(officialChannels) ? officialChannels : [];
+}
+
+function renderChannelCards() {
+  const channels = getChannels();
+
+  if (!channels.length) {
+    return `
+      <div class="empty-state">
+        Não existem canais oficiais configurados.
+      </div>
+    `;
+  }
+
+  return channels.map(channel => `
+    <article class="channel-card">
+      <h3>${escapeHtml(channel.name)}</h3>
+      <p>${escapeHtml(channel.description)}</p>
+      <a
+        href="${escapeHtml(channel.url)}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Aceder à plataforma oficial ↗
+      </a>
+    </article>
+  `).join("");
+}
+
+function matchCard(match) {
+  const favorite = getFavorites().includes(match.id);
+
+  const state = match.status === "live"
+    ? "live"
+    : match.status === "finished"
+      ? "finished"
+      : "upcoming";
+
+  const label = state === "live"
+    ? "AO VIVO"
+    : state === "finished"
+      ? "TERMINADO"
+      : "PRÓXIMO";
+
+  const score = state === "upcoming"
+    ? match.kickoff || "Por confirmar"
+    : `${match.homeScore ?? 0} : ${match.awayScore ?? 0}`;
+
+  return `
+    <article class="match-card">
+
+      <div class="match-meta">
+        <span>${escapeHtml(match.competition)}</span>
+        <span class="status ${state}">
+          ${state === "live" ? '<i class="live-dot"></i>' : ""}
+          ${label}
+        </span>
+      </div>
+
+      <div class="teams">
+
+        <div class="team">
+          <div class="team-crest">
+            ${escapeHtml(match.homeIcon || "⚽")}
+          </div>
+          <div class="team-name">
+            ${escapeHtml(match.home)}
+          </div>
+        </div>
+
+        <div class="score">${escapeHtml(score)}</div>
+
+        <div class="team">
+          <div class="team-crest">
+            ${escapeHtml(match.awayIcon || "⚽")}
+          </div>
+          <div class="team-name">
+            ${escapeHtml(match.away)}
+          </div>
+        </div>
+
+      </div>
+
+      <div class="match-foot">
+        <span>${escapeHtml(match.minute || match.kickoff || "")}</span>
+
+        <button
+          class="favorite-btn ${favorite ? "saved" : ""}"
+          data-favorite="${escapeHtml(match.id)}"
+          aria-label="Adicionar aos favoritos"
+        >
+          ${favorite ? "♥" : "♡"}
+        </button>
+      </div>
+
+    </article>
+  `;
+}
+
+function renderMatches(matches) {
+  const list = $("#matchList");
+  if (!list) return;
+
+  const filtered = matches.filter(match => {
+    const filterOk =
+      currentFilter === "todos" ||
+      match.status === currentFilter;
+
+    const query = searchTerm.toLowerCase();
+
+    const searchOk = !query || [
+      match.home,
+      match.away,
+      match.competition
+    ].some(value =>
+      String(value ?? "").toLowerCase().includes(query)
+    );
+
+    return filterOk && searchOk;
+  });
+
+  list.innerHTML = filtered.length
+    ? filtered.map(matchCard).join("")
+    : `<div class="empty-state">
+        Não foram encontrados jogos nesta secção.
+       </div>`;
+}
+
+function renderCompetitions() {
+  if (!Array.isArray(competitions)) return "";
+
+  return `
+    <div class="competition-grid">
+      ${competitions.map(([name, country]) => `
+        <div class="competition">
+          🏆 ${escapeHtml(name)}
+          <small>${escapeHtml(country)}</small>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderPage() {
+  const content = $("#pageContent");
+  const hero = $(".hero");
+
+  hero.hidden = currentPage !== "inicio";
+
+  const notice = `
+    <div class="notice">
+      <span>ⓘ</span>
+      <p>
+        O MEDBI Football Live apresenta informações e acessos
+        a fontes oficiais. A disponibilidade das transmissões
+        depende dos direitos de cada competição e da região.
+      </p>
+    </div>
+  `;
+
+  if (currentPage === "inicio") {
+    content.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">ACOMPANHA AGORA</span>
+          <h2>Em destaque</h2>
+        </div>
+        <button class="text-btn" data-go="ao-vivo">
+          Ver transmissões →
+        </button>
+      </div>
+
+      ${notice}
+
+      <div class="filter-row">
+        <button class="chip ${currentFilter === "todos" ? "selected" : ""}"
+          data-filter="todos">Todos</button>
+
+        <button class="chip ${currentFilter === "live" ? "selected" : ""}"
+          data-filter="live">Ao vivo</button>
+
+        <button class="chip ${currentFilter === "upcoming" ? "selected" : ""}"
+          data-filter="upcoming">Próximos</button>
+
+        <button class="chip ${currentFilter === "finished" ? "selected" : ""}"
+          data-filter="finished">Terminados</button>
+      </div>
+
+      <div class="match-list" id="matchList"></div>
+    `;
+
+    renderMatches(demoMatches);
+  }
+
+  else if (currentPage === "ao-vivo") {
+    content.innerHTML = `
+      ${heading(
+        "Assistir ao vivo",
+        "Encontra plataformas oficiais para acompanhar futebol."
+      )}
+
+      ${notice}
+
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">FONTES AUTORIZADAS</span>
+          <h2>Plataformas disponíveis</h2>
+        </div>
+      </div>
+
+      ${renderChannelCards()}
+
+      <div class="notice" style="margin-top:16px">
+        <span>ⓘ</span>
+        <p>
+          Estes são acessos às plataformas oficiais, não uma
+          confirmação de que estejam a transmitir um jogo neste
+          momento. Os vídeos só poderão ser reproduzidos aqui
+          quando a fonte disponibilizar incorporação autorizada.
+        </p>
+      </div>
+    `;
+  }
+
+  else if (currentPage === "jogos") {
+    content.innerHTML = `
+      ${heading(
+        "Todos os jogos",
+        "Consulta os jogos disponíveis nesta aplicação."
+      )}
+
+      ${notice}
+
+      <div class="match-list" id="matchList"></div>
+    `;
+
+    renderMatches(demoMatches);
+  }
+
+  else if (currentPage === "favoritos") {
+    content.innerHTML = `
+      ${heading(
+        "Os teus favoritos",
+        "Jogos que guardaste para acompanhar."
+      )}
+
+      <div class="match-list" id="matchList"></div>
+    `;
+
+    const favorites = demoMatches.filter(match =>
+      getFavorites().includes(match.id)
+    );
+
+    renderMatches(favorites);
+  }
+
+  else if (currentPage === "competicoes") {
+    content.innerHTML = `
+      ${heading(
+        "Competições",
+        "Explora campeonatos e torneios."
+      )}
+
+      ${renderCompetitions()}
+    `;
+  }
+
+  else if (currentPage === "canais") {
+    content.innerHTML = `
+      ${heading(
+        "Canais oficiais",
+        "Acede às plataformas oficiais de futebol."
+      )}
+
+      ${renderChannelCards()}
+    `;
+  }
+
+  else {
+    content.innerHTML = `
+      ${heading(
+        "Sobre o MEDBI Football Live",
+        "Uma plataforma dedicada ao futebol."
+      )}
+
+      <div class="channel-card">
+        <h3>O nosso compromisso</h3>
+        <p>
+          O MEDBI Football Live procura facilitar o acesso
+          a informações futebolísticas e a transmissões
+          disponibilizadas por fontes oficiais.
+        </p>
+        <p>
+          Não alojamos nem retransmitimos sinais televisivos
+          sem autorização.
+        </p>
+      </div>
+    `;
+  }
+}
+
+function setPage(page) {
+  currentPage = page;
+  closeMenu();
+
+  $$(".nav-link[data-page], .bottom-link[data-page]")
+    .forEach(button => {
+      button.classList.toggle(
+        "active",
+        button.dataset.page === page
+      );
+    });
+
+  renderPage();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// NAVEGAÇÃO E AÇÕES
+document.addEventListener("click", event => {
+
+  const pageButton = event.target.closest("[data-page]");
+
+  if (pageButton) {
+    setPage(pageButton.dataset.page);
+    return;
+  }
+
+  const goButton = event.target.closest("[data-go]");
+
+  if (goButton) {
+    setPage(goButton.dataset.go);
+    return;
+  }
+
+  const filterButton = event.target.closest("[data-filter]");
+
+  if (filterButton) {
+    currentFilter = filterButton.dataset.filter;
+    renderPage();
+    return;
+  }
+
+  const favoriteButton = event.target.closest("[data-favorite]");
+
+  if (favoriteButton) {
+    toggleFavorite(favoriteButton.dataset.favorite);
+    renderPage();
+    toast("Lista de favoritos atualizada.");
+  }
 });
-$("#menuButton").addEventListener("click",openMenu);
-$("#closeMenu").addEventListener("click",closeMenu);
-scrim.addEventListener("click",closeMenu);
-$("#searchToggle").addEventListener("click",()=>{$("#searchPanel").hidden=!$("#searchPanel").hidden;if(!$("#searchPanel").hidden)$("#searchInput").focus()});
-$("#searchInput").addEventListener("input",e=>{searchTerm=e.target.value;renderPage()});
-$("#clearSearch").addEventListener("click",()=>{$("#searchInput").value="";searchTerm="";renderPage()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu()});
+
+// MENU
+$("#menuButton").addEventListener("click", openMenu);
+$("#closeMenu").addEventListener("click", closeMenu);
+scrim.addEventListener("click", closeMenu);
+
+// PESQUISA
+$("#searchToggle").addEventListener("click", () => {
+  const panel = $("#searchPanel");
+
+  panel.hidden = !panel.hidden;
+
+  if (!panel.hidden) {
+    $("#searchInput").focus();
+  }
+});
+
+$("#searchInput").addEventListener("input", event => {
+  searchTerm = event.target.value;
+  renderPage();
+});
+
+$("#clearSearch").addEventListener("click", () => {
+  $("#searchInput").value = "";
+  searchTerm = "";
+  renderPage();
+});
+
+// TECLADO
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeMenu();
+  }
+});
+
+// INICIALIZAÇÃO
 renderPage();
