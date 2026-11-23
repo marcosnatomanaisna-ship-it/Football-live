@@ -20,9 +20,12 @@ const scrim = $("#scrim");
 let currentPage = "inicio";
 let currentFilter = "todos";
 let searchTerm = "";
+let selectedMatchId = null;
 
 function toast(message) {
   const el = $("#toast");
+  if (!el) return;
+
   el.textContent = message;
   el.classList.add("show");
 
@@ -45,27 +48,28 @@ function escapeHtml(value) {
 function safeUrl(value) {
   try {
     const url = new URL(value);
-    if (url.protocol !== "https:" && url.protocol !== "http:") {
-      return "";
-    }
+
+    if (url.protocol !== "https:") return "";
+
     return url.href;
   } catch {
     return "";
   }
 }
 
+// Aceita apenas vídeos incorporados do YouTube.
 function safeYoutubeEmbed(value) {
   try {
     const url = new URL(value);
 
-    const validHost = [
+    const hosts = [
       "www.youtube-nocookie.com",
       "youtube-nocookie.com",
       "www.youtube.com",
       "youtube.com"
-    ].includes(url.hostname);
+    ];
 
-    if (!validHost) return "";
+    if (!hosts.includes(url.hostname)) return "";
 
     if (!/^\/embed\/[a-zA-Z0-9_-]+$/.test(url.pathname)) {
       return "";
@@ -75,6 +79,22 @@ function safeYoutubeEmbed(value) {
   } catch {
     return "";
   }
+}
+
+function youtubeEmbedFromId(videoId) {
+  if (!/^[a-zA-Z0-9_-]{6,20}$/.test(String(videoId || ""))) {
+    return "";
+  }
+
+  return `https://www.youtube-nocookie.com/embed/${videoId}`;
+}
+
+function getStreamEmbed(stream) {
+  if (stream.videoId) {
+    return youtubeEmbedFromId(stream.videoId);
+  }
+
+  return safeYoutubeEmbed(stream.embedUrl);
 }
 
 function openMenu() {
@@ -102,53 +122,106 @@ function renderNotice() {
       <span>ⓘ</span>
       <p>
         As transmissões dependem dos direitos de transmissão
-        e da disponibilidade em cada país. Utilizamos apenas
-        fontes oficiais.
+        e da disponibilidade em cada país. O MEDBI utiliza
+        apenas fontes oficiais autorizadas.
       </p>
     </div>
   `;
 }
 
+// PRIORIDADE DOS CANAIS
+function getSortedChannels() {
+  return [...officialChannels].sort((a, b) => {
+    return (a.priority || 99) - (b.priority || 99);
+  });
+}
+
 function renderChannels() {
-  if (!officialChannels.length) {
-    return `<div class="empty-state">Nenhum canal configurado.</div>`;
+  const channels = getSortedChannels();
+
+  if (!channels.length) {
+    return `
+      <div class="empty-state">
+        Nenhum canal configurado.
+      </div>
+    `;
   }
 
-  return officialChannels.map(channel => {
-    const url = safeUrl(channel.url);
-    if (!url) return "";
+  const groups = [
+    { priority: 1, title: "Portugal" },
+    { priority: 2, title: "Brasil" },
+    { priority: 3, title: "África" },
+    { priority: 4, title: "Países árabes" },
+    { priority: 5, title: "Internacionais" }
+  ];
+
+  return groups.map(group => {
+    const items = channels.filter(
+      channel => (channel.priority || 99) === group.priority
+    );
+
+    if (!items.length) return "";
 
     return `
-      <article class="channel-card">
-        <h3>${escapeHtml(channel.name)}</h3>
-        <p>${escapeHtml(channel.description)}</p>
-        <a href="${escapeHtml(url)}"
-           target="_blank"
-           rel="noopener noreferrer">
-          Visitar plataforma oficial ↗
-        </a>
-      </article>
+      <section class="channel-group">
+        <h2 style="font-size:17px;margin:22px 0 12px">
+          ${escapeHtml(group.title)}
+        </h2>
+
+        ${items.map(channel => `
+          <article class="channel-card">
+            <div class="stream-info">
+              <h3>${escapeHtml(channel.name)}</h3>
+              <span class="stream-status">
+                ${escapeHtml(channel.access || "Acesso variável")}
+              </span>
+            </div>
+
+            <p>${escapeHtml(channel.description)}</p>
+
+            <div class="stream-source">
+              ${escapeHtml(channel.country || "")}
+              · ${escapeHtml(channel.language || "")}
+            </div>
+
+            <small style="color:var(--muted)">
+              A transmissão deste canal depende dos direitos
+              da competição e da disponibilidade regional.
+            </small>
+          </article>
+        `).join("")}
+      </section>
     `;
   }).join("");
 }
 
-function renderStreams() {
-  if (!officialStreams.length) {
+// TRANSMISSÕES
+function renderStreams(matchId = null) {
+  let streams = [...officialStreams];
+
+  if (matchId) {
+    streams = streams.filter(stream =>
+      String(stream.matchId) === String(matchId)
+    );
+  }
+
+  if (!streams.length) {
     return `
       <div class="empty-state">
         <div style="font-size:30px;margin-bottom:12px">▶</div>
-        <strong>Não existem transmissões confirmadas.</strong>
+
+        <strong>Transmissão não disponível dentro do MEDBI.</strong>
+
         <p>
-          Quando adicionarmos um vídeo oficial disponível,
-          poderás assistir aqui.
+          Ainda não existe uma transmissão oficial autorizada
+          e confirmada para esta seleção.
         </p>
       </div>
     `;
   }
 
-  return officialStreams.map(stream => {
-    const embed = safeYoutubeEmbed(stream.embedUrl);
-    const external = safeUrl(stream.url);
+  return streams.map(stream => {
+    const embed = getStreamEmbed(stream);
 
     return `
       <article class="channel-card video-section">
@@ -171,10 +244,12 @@ function renderStreams() {
               : `
                 <div class="video-placeholder">
                   <div class="play-icon">▶</div>
-                  <h3>Transmissão oficial</h3>
+
+                  <h3>Transmissão não disponível</h3>
+
                   <p>
-                    Este vídeo não permite reprodução incorporada.
-                    Utiliza o acesso à fonte oficial.
+                    Não existe um leitor incorporável autorizado
+                    para esta transmissão.
                   </p>
                 </div>
               `
@@ -185,8 +260,9 @@ function renderStreams() {
           <div class="stream-title">
             ${escapeHtml(stream.title)}
           </div>
+
           <span class="stream-status">
-            ${escapeHtml(stream.status || "DISPONÍVEL")}
+            ${escapeHtml(stream.status || "CONFIRMADO")}
           </span>
         </div>
 
@@ -195,16 +271,16 @@ function renderStreams() {
           · ${escapeHtml(stream.channel || "")}
         </p>
 
+        <p class="stream-source">
+          ${escapeHtml(stream.language || "")}
+          ${stream.access ? " · " + escapeHtml(stream.access) : ""}
+        </p>
+
         ${
-          external
-            ? `
-              <a class="stream-button"
-                 href="${escapeHtml(external)}"
-                 target="_blank"
-                 rel="noopener noreferrer">
-                Assistir na fonte oficial ↗
-              </a>
-            `
+          !embed
+            ? `<small style="color:var(--muted)">
+                 Reprodução dentro da aplicação indisponível.
+               </small>`
             : ""
         }
 
@@ -213,6 +289,7 @@ function renderStreams() {
   }).join("");
 }
 
+// JOGOS
 function matchCard(match) {
   const favorite = getFavorites().includes(match.id);
 
@@ -237,6 +314,7 @@ function matchCard(match) {
 
       <div class="match-meta">
         <span>${escapeHtml(match.competition)}</span>
+
         <span class="status ${state}">
           ${state === "live" ? '<i class="live-dot"></i>' : ""}
           ${label}
@@ -248,28 +326,45 @@ function matchCard(match) {
           <div class="team-crest">
             ${escapeHtml(match.homeIcon || "⚽")}
           </div>
-          <div class="team-name">${escapeHtml(match.home)}</div>
+
+          <div class="team-name">
+            ${escapeHtml(match.home)}
+          </div>
         </div>
 
-        <div class="score">${escapeHtml(score)}</div>
+        <div class="score">
+          ${escapeHtml(score)}
+        </div>
 
         <div class="team">
           <div class="team-crest">
             ${escapeHtml(match.awayIcon || "⚽")}
           </div>
-          <div class="team-name">${escapeHtml(match.away)}</div>
+
+          <div class="team-name">
+            ${escapeHtml(match.away)}
+          </div>
         </div>
       </div>
 
       <div class="match-foot">
-        <span>${escapeHtml(match.minute || match.kickoff || "")}</span>
+        <span>
+          ${escapeHtml(match.minute || match.kickoff || "")}
+        </span>
 
         <button
           class="favorite-btn ${favorite ? "saved" : ""}"
-          data-favorite="${escapeHtml(match.id)}">
+          data-favorite="${escapeHtml(match.id)}"
+          aria-label="Adicionar aos favoritos">
           ${favorite ? "♥" : "♡"}
         </button>
       </div>
+
+      <button
+        class="stream-button"
+        data-watch-match="${escapeHtml(match.id)}">
+        Procurar transmissões →
+      </button>
 
     </article>
   `;
@@ -299,9 +394,11 @@ function renderMatches(matches) {
 
   list.innerHTML = filtered.length
     ? filtered.map(matchCard).join("")
-    : `<div class="empty-state">
-         Não existem jogos nesta secção.
-       </div>`;
+    : `
+      <div class="empty-state">
+        Não existem jogos nesta secção.
+      </div>
+    `;
 }
 
 function renderCompetitions() {
@@ -317,9 +414,17 @@ function renderCompetitions() {
   `;
 }
 
+// PÁGINAS
 function renderPage() {
   const content = $("#pageContent");
-  $(".hero").hidden = currentPage !== "inicio";
+
+  if (!content) return;
+
+  const hero = $(".hero");
+
+  if (hero) {
+    hero.hidden = currentPage !== "inicio";
+  }
 
   if (currentPage === "inicio") {
     content.innerHTML = `
@@ -328,6 +433,7 @@ function renderPage() {
           <span class="eyebrow">MEDBI FOOTBALL LIVE</span>
           <h2>Transmissões</h2>
         </div>
+
         <button class="text-btn" data-go="ao-vivo">
           Ver todas →
         </button>
@@ -339,6 +445,7 @@ function renderPage() {
         <h2 style="font-size:17px;margin-bottom:14px">
           Jogos para assistir
         </h2>
+
         ${renderStreams()}
       </div>
 
@@ -347,7 +454,10 @@ function renderPage() {
           <span class="eyebrow">ACOMPANHA AGORA</span>
           <h2>Jogos</h2>
         </div>
-        <button class="text-btn" data-go="jogos">Ver todos →</button>
+
+        <button class="text-btn" data-go="jogos">
+          Ver todos →
+        </button>
       </div>
 
       <div class="filter-row">
@@ -361,18 +471,36 @@ function renderPage() {
   }
 
   else if (currentPage === "ao-vivo") {
+    const selectedMatch = demoMatches.find(
+      match => String(match.id) === String(selectedMatchId)
+    );
+
     content.innerHTML = `
       ${heading(
-        "Assistir ao vivo",
-        "Transmissões oficiais disponíveis."
+        selectedMatch
+          ? `${selectedMatch.home} × ${selectedMatch.away}`
+          : "Assistir ao vivo",
+        selectedMatch
+          ? "Transmissões associadas a este jogo."
+          : "Transmissões oficiais disponíveis."
       )}
 
       ${renderNotice()}
 
-      ${renderStreams()}
+      ${renderStreams(selectedMatchId)}
+
+      ${
+        selectedMatch
+          ? `
+            <button class="text-btn" data-clear-match>
+              ← Ver todas as transmissões
+            </button>
+          `
+          : ""
+      }
 
       <h2 style="font-size:18px;margin:25px 0 14px">
-        Canais oficiais
+        Canais por prioridade
       </h2>
 
       ${renderChannels()}
@@ -381,9 +509,14 @@ function renderPage() {
 
   else if (currentPage === "jogos") {
     content.innerHTML = `
-      ${heading("Todos os jogos", "Jogos e partidas disponíveis.")}
+      ${heading(
+        "Todos os jogos",
+        "Seleciona uma partida para procurar os canais."
+      )}
 
-      <div class="filter-row">${filterButtons()}</div>
+      <div class="filter-row">
+        ${filterButtons()}
+      </div>
 
       <div class="match-list" id="matchList"></div>
     `;
@@ -407,7 +540,10 @@ function renderPage() {
 
   else if (currentPage === "competicoes") {
     content.innerHTML = `
-      ${heading("Competições", "Campeonatos e torneios.")}
+      ${heading(
+        "Competições",
+        "Campeonatos e torneios."
+      )}
 
       ${renderCompetitions()}
     `;
@@ -415,7 +551,12 @@ function renderPage() {
 
   else if (currentPage === "canais") {
     content.innerHTML = `
-      ${heading("Canais oficiais", "Plataformas de transmissão.")}
+      ${heading(
+        "Canais oficiais",
+        "Canais organizados por prioridade de idioma."
+      )}
+
+      ${renderNotice()}
 
       ${renderChannels()}
     `;
@@ -430,10 +571,12 @@ function renderPage() {
 
       <div class="channel-card">
         <h3>O nosso compromisso</h3>
+
         <p>
-          O MEDBI Football Live organiza informações e
-          disponibiliza acesso a fontes oficiais.
+          O MEDBI Football Live organiza informações sobre
+          futebol e transmissões oficiais.
         </p>
+
         <p>
           Não retransmitimos sinais televisivos sem autorização.
         </p>
@@ -477,9 +620,33 @@ function setPage(page) {
 
 // CLIQUES
 document.addEventListener("click", event => {
+  const favoriteButton = event.target.closest("[data-favorite]");
+
+  if (favoriteButton) {
+    toggleFavorite(favoriteButton.dataset.favorite);
+    renderPage();
+    toast("Favoritos atualizados.");
+    return;
+  }
+
+  const watchButton = event.target.closest("[data-watch-match]");
+
+  if (watchButton) {
+    selectedMatchId = watchButton.dataset.watchMatch;
+    setPage("ao-vivo");
+    return;
+  }
+
+  if (event.target.closest("[data-clear-match]")) {
+    selectedMatchId = null;
+    renderPage();
+    return;
+  }
+
   const pageButton = event.target.closest("[data-page]");
 
   if (pageButton) {
+    selectedMatchId = null;
     setPage(pageButton.dataset.page);
     return;
   }
@@ -487,6 +654,7 @@ document.addEventListener("click", event => {
   const goButton = event.target.closest("[data-go]");
 
   if (goButton) {
+    selectedMatchId = null;
     setPage(goButton.dataset.go);
     return;
   }
@@ -496,40 +664,37 @@ document.addEventListener("click", event => {
   if (filterButton) {
     currentFilter = filterButton.dataset.filter;
     renderPage();
-    return;
-  }
-
-  const favoriteButton = event.target.closest("[data-favorite]");
-
-  if (favoriteButton) {
-    toggleFavorite(favoriteButton.dataset.favorite);
-    renderPage();
-    toast("Favoritos atualizados.");
   }
 });
 
 // MENU
-$("#menuButton").addEventListener("click", openMenu);
-$("#closeMenu").addEventListener("click", closeMenu);
-scrim.addEventListener("click", closeMenu);
+$("#menuButton")?.addEventListener("click", openMenu);
+$("#closeMenu")?.addEventListener("click", closeMenu);
+scrim?.addEventListener("click", closeMenu);
 
 // PESQUISA
-$("#searchToggle").addEventListener("click", () => {
+$("#searchToggle")?.addEventListener("click", () => {
   const panel = $("#searchPanel");
+
+  if (!panel) return;
+
   panel.hidden = !panel.hidden;
 
   if (!panel.hidden) {
-    $("#searchInput").focus();
+    $("#searchInput")?.focus();
   }
 });
 
-$("#searchInput").addEventListener("input", event => {
+$("#searchInput")?.addEventListener("input", event => {
   searchTerm = event.target.value;
   renderPage();
 });
 
-$("#clearSearch").addEventListener("click", () => {
-  $("#searchInput").value = "";
+$("#clearSearch")?.addEventListener("click", () => {
+  const input = $("#searchInput");
+
+  if (input) input.value = "";
+
   searchTerm = "";
   renderPage();
 });
@@ -541,4 +706,4 @@ document.addEventListener("keydown", event => {
 
 // INICIAR
 renderPage();
-      
+    
