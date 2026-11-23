@@ -48,3 +48,9 @@ export const officialChannels = [
     type: "platform"
   }
 ];
+
+/*
+  Transmissões oficiais verificadas.
+  A lista começa vazia para evitar vídeos falsos.
+*/
+export const officialStreams = [];
